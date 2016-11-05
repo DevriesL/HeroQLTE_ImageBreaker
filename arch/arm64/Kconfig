@@ -725,7 +725,7 @@ config ARM64_STLR_NEEDS_BARRIER
 	  For production kernels, you should say 'N' here.
 
 config ARM64_SEV_IN_LOCK_UNLOCK
-	bool "Add explicit SEV in the spinlock unlock code path:
+	bool "Add explicit SEV in the spinlock unlock code path"
 	def_bool ARCH_MSM8996
 	help
 	In certain unexplained cases, the stlr alone might not wakeup
