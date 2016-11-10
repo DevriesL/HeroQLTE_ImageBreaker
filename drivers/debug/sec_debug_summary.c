@@ -194,23 +194,6 @@ static int __init summary_init_infomon(void)
 
 static int __init summary_init_varmon(void)
 {
-	uint64_t last_pet_paddr = 0;
-	uint64_t last_ns_paddr = 0;
-
-	/* save paddrs of last_pet und last_ns */
-	if (secdbg_paddr && secdbg_log) {
-		last_pet_paddr = secdbg_paddr +
-			offsetof(struct sec_debug_log, last_pet);
-		last_ns_paddr = secdbg_paddr +
-			offsetof(struct sec_debug_log, last_ns);
-		sec_debug_summary_add_varmon("last_pet",
-			sizeof((secdbg_log->last_pet)), last_pet_paddr);
-		sec_debug_summary_add_varmon("last_ns",
-				sizeof((secdbg_log->last_ns.counter)),
-				last_ns_paddr);
-	} else
-		pr_emerg("**** secdbg_log or secdbg_paddr is not initialized ****\n");
-
 #if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
 	ADD_VAR_TO_VARMON(boot_reason);
 	ADD_VAR_TO_VARMON(cold_boot);
@@ -222,61 +205,6 @@ static int __init summary_init_varmon(void)
 		ADD_ARRAY_TO_VARMON(cpu_frequency[i], i, CPU_FREQ_CORE);
 		ADD_ARRAY_TO_VARMON(cpu_volt[i], i, CPU_VOLT_CORE);
 	}
-#endif
-
-	return 0;
-}
-
-static int __init summary_init_sched_log(struct sec_debug_summary_data_apss *p)
-{
-	if (!secdbg_paddr)
-		return -ENOMEM;
-
-	p->sched_log.sched_idx_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, idx_sched);
-	p->sched_log.sched_buf_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, sched);
-	p->sched_log.sched_struct_sz =
-		sizeof(struct sched_log);
-	p->sched_log.sched_array_cnt = SCHED_LOG_MAX;
-
-	p->sched_log.irq_idx_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, idx_irq);
-	p->sched_log.irq_buf_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, irq);
-	p->sched_log.irq_struct_sz =
-		sizeof(struct irq_log);
-	p->sched_log.irq_array_cnt = SCHED_LOG_MAX;
-
-	p->sched_log.secure_idx_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, idx_secure);
-	p->sched_log.secure_buf_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, secure);
-	p->sched_log.secure_struct_sz =
-		sizeof(struct secure_log);
-	p->sched_log.secure_array_cnt = TZ_LOG_MAX;
-
-	p->sched_log.irq_exit_idx_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, idx_irq_exit);
-	p->sched_log.irq_exit_buf_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, irq_exit);
-	p->sched_log.irq_exit_struct_sz =
-		sizeof(struct irq_exit_log);
-	p->sched_log.irq_exit_array_cnt = SCHED_LOG_MAX;
-
-#ifdef CONFIG_SEC_DEBUG_MSG_LOG
-	p->sched_log.msglog_idx_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, idx_secmsg);
-	p->sched_log.msglog_buf_paddr = secdbg_paddr +
-		offsetof(struct sec_debug_log, secmsg);
-	p->sched_log.msglog_struct_sz =
-		sizeof(struct secmsg_log);
-	p->sched_log.msglog_array_cnt = MSG_LOG_MAX;
-#else
-	p->sched_log.msglog_idx_paddr = 0;
-	p->sched_log.msglog_buf_paddr = 0;
-	p->sched_log.msglog_struct_sz = 0;
-	p->sched_log.msglog_array_cnt = 0;
 #endif
 
 	return 0;
@@ -384,8 +312,6 @@ int __init sec_debug_summary_init(void)
 	summary_init_infomon();
 
 	summary_init_varmon();
-
-	summary_init_sched_log(secdbg_apss);
 
 	summary_init_core_reg(secdbg_apss);
 

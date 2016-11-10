@@ -799,14 +799,6 @@ config SEC_DEBUG_PRINTK_NOCACHE
 	  This ensures that printk is never stale
 	  which is a good feature when debugging without
 	  hardware debuggers. If unsure, keep it turned on.
-config SEC_DEBUG_SCHED_LOG
-	bool "Samsung Scheduler Logging Feature"
-	default n
-	help
-	  Samsung Scheduler Logging Feature for Debug use.
-	  Enables task scheduling history.
-	  Enables IRQ scheduling history.
-	  This feature is enabled in defconfig.
 config SEC_DEBUG_SEMAPHORE_LOG
 	bool "Samsung Semaphore Logging Feature"
 	default n
@@ -854,17 +846,9 @@ config SEC_DEBUG_IRQ_EXIT_LOG
 	  Helps indetification of irq enter and exit.
 	  This is to track the current state of IRQ execution.
 	  This is enabled in defconfig file.
-config SEC_DEBUG_MSG_LOG
-	bool "Message Log for ram dump debug"
-	default n
-	help
-	  Verbose Logging for ram dump analysis.
-	  Collects kernel debug log.
-	  Log is collected in the no-cache area.
-	  This feature is enabled in defconfig.
 config SEC_DEBUG_SUMMARY
 	bool "Debug summary"
-        depends on SEC_DEBUG && SEC_DEBUG_SCHED_LOG
+        depends on SEC_DEBUG
 	default n
 	help
 	  Subsystems debug summary feature.

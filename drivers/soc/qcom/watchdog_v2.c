@@ -100,10 +100,7 @@ static unsigned long cpu_buf_paddr;
 static unsigned long cpu_data_vaddr;
 static unsigned long cpu_data_paddr;
 static void __iomem * wdog_base_addr;
-static unsigned long long *plast_pet;
-extern void sec_debug_save_last_pet(unsigned long long last_pet);
 #endif
-
 
 /*
  * On the kernel command line specify
@@ -324,10 +321,6 @@ static void pet_watchdog(struct msm_watchdog_data *wdog_dd)
 		}
 	}
 	pr_err("[%s] last_count : %x, new_count : %x, bark_time : %x, bite_time : %x\n", __func__, last_count, count, __raw_readl(wdog_dd->base + WDT0_BARK_TIME), __raw_readl(wdog_dd->base + WDT0_BITE_TIME));
-#ifdef CONFIG_SEC_DEBUG
-	sec_debug_save_last_pet(time_ns);
-#endif
-
 }
 
 static void keep_alive_response(void *info)
@@ -694,10 +687,6 @@ static void init_watchdog_data(struct msm_watchdog_data *wdog_dd)
 	__raw_writel(1, wdog_dd->base + WDT0_RST);
 	wdog_dd->last_pet = sched_clock();
 	wdog_dd->enabled = true;
-#ifdef CONFIG_SEC_DEBUG
-	plast_pet = &(wdog_dd->last_pet);
-	sec_debug_save_last_pet(wdog_dd->last_pet);
-#endif
 	
 	error = device_create_file(wdog_dd->dev, &dev_attr_disable);
 	if (error)

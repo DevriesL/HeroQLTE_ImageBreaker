@@ -88,10 +88,6 @@
 #include <asm/app_api.h>
 #endif
 
-#ifdef CONFIG_SEC_DEBUG
-#include <linux/qcom/sec_debug.h>
-#endif
-
 #include "sched.h"
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
@@ -4998,9 +4994,6 @@ need_resched:
 		 */
 		cpu = smp_processor_id();
 		rq = cpu_rq(cpu);
-#ifdef CONFIG_SEC_DEBUG
-		sec_debug_task_sched_log(cpu, rq->curr);
-#endif
 	} else
 		raw_spin_unlock_irq(&rq->lock);
 
@@ -9221,11 +9214,6 @@ void __init sched_init(void)
 {
 	int i, j;
 	unsigned long alloc_size = 0, ptr;
-
-#ifdef CONFIG_SEC_DEBUG
-	sec_gaf_supply_rqinfo(offsetof(struct rq, curr),
-		offsetof(struct cfs_rq, rq));
-#endif
 
 	if (sched_enable_hmp)
 		pr_info("HMP scheduling enabled.\n");

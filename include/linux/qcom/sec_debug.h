@@ -297,88 +297,6 @@ static inline void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 static inline int sec_debug_is_enabled(void) {return 0; }
 #endif
 
-#ifdef CONFIG_SEC_DEBUG_SCHED_LOG
-extern void sec_debug_task_sched_log_short_msg(char *msg);
-extern void sec_debug_secure_log(u32 svc_id,u32 cmd_id);
-extern void sec_debug_task_sched_log(int cpu, struct task_struct *task);
-extern void sec_debug_irq_sched_log(unsigned int irq, void *fn, int en);
-extern void sec_debug_irq_sched_log_end(void);
-extern void sec_debug_timer_log(unsigned int type, int int_lock, void *fn);
-extern void sec_debug_sched_log_init(void);
-#define secdbg_sched_msg(fmt, ...) \
-	do { \
-		char ___buf[16]; \
-		snprintf(___buf, sizeof(___buf), fmt, ##__VA_ARGS__); \
-		sec_debug_task_sched_log_short_msg(___buf); \
-	} while (0)
-#else
-static inline void sec_debug_task_sched_log(int cpu, struct task_struct *task)
-{
-}
-static inline void sec_debug_secure_log(u32 svc_id,u32 cmd_id)
-{
-}
-static inline void sec_debug_irq_sched_log(unsigned int irq, void *fn, int en)
-{
-}
-static inline void sec_debug_irq_sched_log_end(void)
-{
-}
-static inline void sec_debug_timer_log(unsigned int type,
-						int int_lock, void *fn)
-{
-}
-static inline void sec_debug_sched_log_init(void)
-{
-}
-#define secdbg_sched_msg(fmt, ...)
-#endif
-extern void sec_debug_irq_enterexit_log(unsigned int irq,
-						unsigned long long start_time);
-
-/* klaatu - schedule log */
-#ifdef CONFIG_SEC_DEBUG_SCHED_LOG
-#define SCHED_LOG_MAX 512
-#define TZ_LOG_MAX 64
-
-struct irq_log {
-	unsigned long long time;
-	int irq;
-	void *fn;
-	int en;
-	int preempt_count;
-	void *context;
-};
-
-struct secure_log {
-	unsigned long long time;
-	u32 svc_id, cmd_id;
-};
-
-struct irq_exit_log {
-	unsigned int irq;
-	unsigned long long time;
-	unsigned long long end_time;
-	unsigned long long elapsed_time;
-};
-
-struct sched_log {
-	unsigned long long time;
-	char comm[TASK_COMM_LEN];
-	pid_t pid;
-	struct task_struct *pTask;
-};
-
-
-struct timer_log {
-	unsigned long long time;
-	unsigned int type;
-	int int_lock;
-	void *fn;
-};
-
-#endif	/* CONFIG_SEC_DEBUG_SCHED_LOG */
-
 #ifdef CONFIG_SEC_DEBUG_SEMAPHORE_LOG
 #define SEMAPHORE_LOG_MAX 100
 struct sem_debug {
@@ -476,45 +394,6 @@ static inline void sec_debug_fuelgauge_log(unsigned int voltage,
 
 #endif
 
-#ifdef CONFIG_SEC_DEBUG_SCHED_LOG
-struct sec_debug_log {
-	atomic_t idx_sched[CONFIG_NR_CPUS];
-	struct sched_log sched[CONFIG_NR_CPUS][SCHED_LOG_MAX];
-
-	atomic_t idx_irq[CONFIG_NR_CPUS];
-	struct irq_log irq[CONFIG_NR_CPUS][SCHED_LOG_MAX];
-
-	atomic_t idx_secure[CONFIG_NR_CPUS];
-	struct secure_log secure[CONFIG_NR_CPUS][TZ_LOG_MAX];
-
-	atomic_t idx_irq_exit[CONFIG_NR_CPUS];
-	struct irq_exit_log irq_exit[CONFIG_NR_CPUS][SCHED_LOG_MAX];
-
-	atomic_t idx_timer[CONFIG_NR_CPUS];
-	struct timer_log timer_log[CONFIG_NR_CPUS][SCHED_LOG_MAX];
-
-#ifdef CONFIG_SEC_DEBUG_MSG_LOG
-	atomic_t idx_secmsg[CONFIG_NR_CPUS];
-	struct secmsg_log secmsg[CONFIG_NR_CPUS][MSG_LOG_MAX];
-#endif
-#ifdef CONFIG_SEC_DEBUG_AVC_LOG
-	atomic_t idx_secavc[CONFIG_NR_CPUS];
-	struct secavc_log secavc[CONFIG_NR_CPUS][AVC_LOG_MAX];
-#endif
-#ifdef CONFIG_SEC_DEBUG_DCVS_LOG
-	atomic_t dcvs_log_idx[CONFIG_NR_CPUS] ;
-	struct dcvs_debug dcvs_log[CONFIG_NR_CPUS][DCVS_LOG_MAX] ;
-#endif
-#ifdef CONFIG_SEC_DEBUG_FUELGAUGE_LOG
-	atomic_t fg_log_idx;
-	struct fuelgauge_debug fg_log[FG_LOG_MAX] ;
-#endif
-	/* zwei variables -- last_pet und last_ns */
-	unsigned long long last_pet;
-	atomic64_t last_ns;
-};
-
-#endif	/* CONFIG_SEC_DEBUG_SCHED_LOG */
 /* for sec debug level */
 #define KERNEL_SEC_DEBUG_LEVEL_LOW	(0x574F4C44)
 #define KERNEL_SEC_DEBUG_LEVEL_MID	(0x44494D44)
