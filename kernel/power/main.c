@@ -528,7 +528,6 @@ static ssize_t cpufreq_table_show(struct kobject *kobj,
 			struct kobj_attribute *attr, char *buf)
 {
 	ssize_t len = 0;
-#ifndef CONFIG_SCHED_HMP
 	int i, count = 0;
 	unsigned int freq;
 
@@ -552,9 +551,6 @@ static ssize_t cpufreq_table_show(struct kobject *kobj,
 
 	len--;
 	len += sprintf(buf + len, "\n");
-#else
-	len = cpufreq_limit_get_table(buf);
-#endif
 
 	return len;
 }

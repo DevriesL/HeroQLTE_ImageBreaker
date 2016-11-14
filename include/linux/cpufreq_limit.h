@@ -34,9 +34,7 @@ struct cpufreq_limit_handle *cpufreq_limit_max_freq(unsigned long max_freq,
 }
 
 
-#ifdef CONFIG_SCHED_HMP
 ssize_t cpufreq_limit_get_table(char *buf);
-#endif
 #else
 static inline
 struct cpufreq_limit_handle *cpufreq_limit_get(unsigned long min_freq,

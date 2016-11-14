@@ -6,10 +6,6 @@
 #include <linux/of.h>
 #include <linux/cpufreq.h>
 
-#ifdef CONFIG_SCHED_HMP
-#define USE_HMP_BOOST
-#endif
-
 #undef pr_debug
 #define pr_debug   if(debug_flag) printk
 
@@ -40,29 +36,13 @@
 		pm_qos_remove_request(req); \
 }
 
-#ifdef USE_HMP_BOOST
-#define set_hmp(enable)	 { \
-	if(enable != current_hmp_boost) { \
-		pr_debug("[Input Booster2] ******      set_hmp : %d ( %s )\n", enable, __FUNCTION__); \
-		if (set_hmp_boost(enable) < 0) {\
-			pr_debug("[Input Booster2] ******            !!! fail to HMP !!!\n"); \
-		} \
-		current_hmp_boost = enable; \
-	} \
-}
-#else
-#define set_hmp(enable)
-#endif
-
 #define SET_BOOSTER  { \
-	set_hmp(_this->param[_this->index].hmp_boost); \
 	set_qos(&_this->cpu_qos, /*PM_QOS_CPU_FREQ_MIN*/PM_QOS_CLUSTER1_FREQ_MIN, _this->param[_this->index].cpu_freq);  \
 	set_qos(&_this->kfc_qos, /*PM_QOS_KFC_FREQ_MIN*/PM_QOS_CLUSTER0_FREQ_MIN, _this->param[_this->index].kfc_freq);  \
 	set_qos(&_this->mif_qos, PM_QOS_BUS_THROUGHPUT, _this->param[_this->index].mif_freq);  \
 	set_qos(&_this->int_qos, PM_QOS_DEVICE_THROUGHPUT, _this->param[_this->index].int_freq);  \
 }
 #define REMOVE_BOOSTER  { \
-	set_hmp(0);  \
 	remove_qos(&_this->cpu_qos);  \
 	remove_qos(&_this->kfc_qos);  \
 	remove_qos(&_this->mif_qos);  \
@@ -118,20 +98,6 @@
 
 #elif defined(CONFIG_ARCH_MSM) //______________________________________________________________________________
 
-#ifdef USE_HMP_BOOST
-#define set_hmp(enable)	 { \
-	if(enable != current_hmp_boost) { \
-		pr_debug("[Input Booster2] ******      set_hmp : %d ( %s )\n", enable, __FUNCTION__); \
-		if (sched_set_boost(enable) < 0) {\
-			pr_debug("[Input Booster2] ******            !!! fail to HMP !!!\n"); \
-		} \
-		current_hmp_boost = enable; \
-	} \
-}
-#else
-#define set_hmp(enable)
-#endif
-
 #ifndef CONFIG_CPU_FREQ_LIMIT_USERSPACE
 #define DVFS_TOUCH_ID	0
 int set_freq_limit(unsigned long id, unsigned int freq)
@@ -144,25 +110,21 @@ int set_freq_limit(unsigned long id, unsigned int freq)
 #ifdef CONFIG_DEBUG_BUS_VOTER
 #define SET_BOOSTER  { \
 	pr_debug("[Input Booster2] %s      set_freq_limit : %d, msm_bus_floor_vote : %d\n", glGage, _this->param[_this->index].cpu_freq, _this->param[_this->index].bimc_freq); \
-	set_hmp(_this->param[_this->index].hmp_boost); \
 	set_freq_limit(DVFS_TOUCH_ID, _this->param[_this->index].cpu_freq);  \
 	msm_bus_floor_vote("bimc", _this->param[_this->index].bimc_freq * 1000);  \
 }
 #define REMOVE_BOOSTER  { \
 	pr_debug("[Input Booster2] %s      set_freq_limit : %d, msm_bus_floor_vote : %d\n", glGage, -1, 0); \
-	set_hmp(0); \
 	set_freq_limit(DVFS_TOUCH_ID, -1);  \
 	msm_bus_floor_vote("bimc", 0);  \
 }
 #else
 #define SET_BOOSTER  { \
 	pr_debug("[Input Booster2] %s      set_freq_limit : %d\n", glGage, _this->param[_this->index].cpu_freq); \
-	set_hmp(_this->param[_this->index].hmp_boost); \
 	set_freq_limit(DVFS_TOUCH_ID, _this->param[_this->index].cpu_freq);  \
 }
 #define REMOVE_BOOSTER  { \
 	pr_debug("[Input Booster2] %s      set_freq_limit : %d\n", glGage, -1); \
-	set_hmp(0); \
 	set_freq_limit(DVFS_TOUCH_ID, -1);  \
 }
 #endif

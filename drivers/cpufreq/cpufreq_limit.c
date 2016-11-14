@@ -146,7 +146,6 @@ int cpufreq_limit_put(struct cpufreq_limit_handle *handle)
 	return 0;
 }
 
-#ifdef CONFIG_SCHED_HMP
 struct cpufreq_limit_hmp {
 	unsigned int 		little_cpu_start;
 	unsigned int 		little_cpu_end;
@@ -290,88 +289,6 @@ static int set_little_divider(struct cpufreq_policy *policy, unsigned long *v)
 	return 0;
 }
 
-static int cpufreq_limit_hmp_boost(int enable)
-{
-	unsigned int ret = 0;
-
-	pr_debug("%s: enable=%d, type=%d, active=%d\n", __func__,
-		enable, hmp_param.hmp_boost_type, hmp_param.hmp_boost_active);
-
-	if (enable) {
-		if (hmp_param.hmp_boost_type && !hmp_param.hmp_boost_active) {
-			hmp_param.hmp_boost_active = enable;
-			ret = sched_set_boost(1);
-			if (ret)
-				pr_err("%s: HMP boost enable failed\n", __func__);
-		}
-	}
-	else {
-		if (hmp_param.hmp_boost_type && hmp_param.hmp_boost_active) {
-			hmp_param.hmp_boost_active = 0;
-			ret = sched_set_boost(0);
-			if (ret)
-				pr_err("%s: HMP boost disable failed\n", __func__);
-		}
-	}
-
-	return ret;
-}
-
-static int cpufreq_limit_adjust_freq(struct cpufreq_policy *policy,
-		unsigned long *min, unsigned long *max)
-{
-	unsigned int hmp_boost_active = 0;
-
-	pr_debug("%s+: cpu=%d, min=%ld, max=%ld\n", __func__, policy->cpu, *min, *max);
-
-	if (is_little(policy->cpu)) { /* Little */
-		if (*min >= hmp_param.big_min_freq) { /* Big clock */
-			*min = hmp_param.little_min_lock * hmp_param.little_divider;
-		}
-		else { /* Little clock */
-			*min *= hmp_param.little_divider;
-		}
-
-		if (*max >= hmp_param.big_min_freq) { /* Big clock */
-			*max = policy->cpuinfo.max_freq;
-		}
-		else { /* Little clock */
-			*max *= hmp_param.little_divider;
-		}
-	}
-	else { /* BIG */
-		if (*min >= hmp_param.big_min_freq) { /* Big clock */
-			hmp_boost_active = 1;
-		}
-		else { /* Little clock */
-			*min = policy->cpuinfo.min_freq;
-			hmp_boost_active = 0;
-		}
-
-		if (*max >= hmp_param.big_min_freq) { /* Big clock */
-			pr_debug("%s: big_min_freq=%ld, max=%ld\n", __func__,
-				hmp_param.big_min_freq, *max);
-		}
-		else { /* Little clock */
-			*max = policy->cpuinfo.min_freq;
-			hmp_boost_active = 0;
-		}
-
-		cpufreq_limit_hmp_boost(hmp_boost_active);
-	}
-
-	pr_debug("%s-: cpu=%d, min=%ld, max=%ld\n", __func__, policy->cpu, *min, *max);
-
-	return 0;
-}
-#else
-static inline int cpufreq_limit_adjust_freq(struct cpufreq_policy *policy,
-		unsigned long *min, unsigned long *max) { return 0; }
-static inline int cpufreq_limit_hmp_boost(int enable) { return 0; }
-static inline int set_little_divider(struct cpufreq_policy *policy,
-		unsigned long *v) { return 0; }
-#endif /* CONFIG_SCHED_HMP */
-
 static int cpufreq_limit_notifier_policy(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
@@ -400,13 +317,6 @@ static int cpufreq_limit_notifier_policy(struct notifier_block *nb,
 #ifdef CONFIG_SEC_PM
 	pr_debug("CPUFREQ(%d): %s: umin=%d,umax=%d\n",
 		policy->cpu, __func__, policy->user_policy.min, policy->user_policy.max);
-
-#ifndef CONFIG_SCHED_HMP /* TODO */
-	if (policy->user_policy.min > min)
-		min = policy->user_policy.min;
-	if (policy->user_policy.max && policy->user_policy.max < max)
-		max = policy->user_policy.max;
-#endif
 #endif
 
 	mutex_unlock(&cpufreq_limit_lock);
@@ -435,10 +345,8 @@ static int cpufreq_limit_notifier_policy(struct notifier_block *nb,
 	}
 #endif
 
-	if (!min && max == ULONG_MAX) {
-		cpufreq_limit_hmp_boost(0);
+	if (!min && max == ULONG_MAX)
 		goto done;
-	}
 
 	if (!min) {
 		min = policy->cpuinfo.min_freq;
@@ -447,23 +355,6 @@ static int cpufreq_limit_notifier_policy(struct notifier_block *nb,
 	if (max == ULONG_MAX) {
 		max = policy->cpuinfo.max_freq;
 		set_little_divider(policy, &max);
-	}
-
-	/*
-	 * little_divider 1 means,
-	 * little and big has similar power and performance case
-	 * e.g. MSM8996 silver and gold
-	 */
-	if (hmp_param.little_divider == 1) {
-		if (is_big(policy->cpu)) {
-			/* sched_boost scenario */
-			if (min > hmp_param.little_max_freq)
-				cpufreq_limit_hmp_boost(1);
-			else
-				cpufreq_limit_hmp_boost(0);
-		}
-	} else {
-		cpufreq_limit_adjust_freq(policy, &min, &max);
 	}
 
 	pr_debug("%s: limiting cpu%d cpufreq to %lu-%lu\n", __func__,
@@ -502,7 +393,6 @@ static ssize_t show_cpufreq_limit_requests(struct kobject *kobj,
 static struct global_attr cpufreq_limit_requests_attr =
 	__ATTR(cpufreq_limit_requests, 0444, show_cpufreq_limit_requests, NULL);
 
-#ifdef CONFIG_SCHED_HMP
 #define MAX_ATTRIBUTE_NUM 12
 
 #define show_one(file_name, object)									\
@@ -643,11 +533,9 @@ define_one_global_rw(little_max_freq);
 define_one_global_rw(little_min_lock);
 define_one_global_rw(little_divider);
 define_one_global_rw(hmp_boost_type);
-#endif /* CONFIG_SCHED_HMP */
 
 static struct attribute *limit_attributes[] = {
 	&cpufreq_limit_requests_attr.attr,
-#ifdef CONFIG_SCHED_HMP
 	&little_cpu_num.attr,
 	&big_cpu_num.attr,
 	&big_min_freq.attr,
@@ -657,7 +545,6 @@ static struct attribute *limit_attributes[] = {
 	&little_min_lock.attr,
 	&little_divider.attr,
 	&hmp_boost_type.attr,
-#endif
 	NULL,
 };
 
