@@ -8,7 +8,7 @@ export PATH=/home/devries/aarch64-linux-android-4.9-marshmallow-release/bin:$PAT
 
 export CROSS_COMPILE=aarch64-linux-android-
 
-make heroqlte_chnzc_defconfig
+make hero2qlte_chnzc_defconfig
 
 make
 
@@ -27,6 +27,6 @@ tools/mkbootimg \
       --dt dt.img \
       --ramdisk_offset 0x02200000 \
       --tags_offset 0x02000000 \
-      --output boot.img
+      --output boot_edge.img
 
-tar -cvf boot.tar boot.img
+tar -cvf boot_edge.tar boot_edge.img
